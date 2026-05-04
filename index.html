@@ -492,6 +492,66 @@
     margin-top: 0.75rem;
   }
 
+  /* POPUP ENCODAGE */
+  .popup-bg {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .popup-bg.open { opacity: 1; pointer-events: all; }
+
+  .popup {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    width: 400px;
+    max-width: 92vw;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    transform: scale(0.92);
+    transition: transform 0.2s;
+  }
+  .popup-bg.open .popup { transform: scale(1); }
+
+  .popup-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+
+  .popup-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+  }
+
+  .popup-subtitle {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+  }
+
+  .popup-card-num {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+  }
+  .popup-card-num.owned { color: var(--blue); }
+  .popup-card-num.new { color: var(--green); }
+
+  .popup-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 1.25rem;
+  }
+
   /* Responsive */
   @media (max-width: 800px) {
     .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
@@ -613,6 +673,17 @@
       <button class="btn success full" id="modal-toggle-btn" onclick="modalToggle()">Marquer possédée</button>
       <button class="btn full" onclick="closeModalBtn()">Fermer</button>
     </div>
+  </div>
+</div>
+
+<!-- POPUP ENCODAGE CARTE -->
+<div class="popup-bg" id="encode-popup">
+  <div class="popup">
+    <div class="popup-icon" id="popup-icon">📦</div>
+    <div class="popup-card-num" id="popup-card-num">001</div>
+    <div class="popup-title" id="popup-title">Titre</div>
+    <div class="popup-subtitle" id="popup-subtitle">Sous-titre</div>
+    <div class="popup-actions" id="popup-actions"></div>
   </div>
 </div>
 
@@ -776,18 +847,80 @@ async function toggleManual() {
     return;
   }
   const id = padNum(num);
-  await toggleCard(id);
   input.value = '';
   input.focus();
+  showEncodePopup(id);
 }
+
+// ─── POPUP ENCODAGE ───────────────────────────────────────────────
+function showEncodePopup(id) {
+  const owned = collection[id];
+  const popup = document.getElementById('encode-popup');
+  document.getElementById('popup-card-num').textContent = '#' + id;
+  document.getElementById('popup-card-num').className = 'popup-card-num ' + (owned ? 'owned' : 'new');
+
+  const actionsEl = document.getElementById('popup-actions');
+  actionsEl.innerHTML = '';
+
+  if (owned) {
+    // Carte déjà possédée
+    document.getElementById('popup-icon').textContent = '⚠️';
+    document.getElementById('popup-title').textContent = 'Tu as déjà cette carte !';
+    document.getElementById('popup-subtitle').textContent = 'Cette carte est déjà dans ta collection. Que veux-tu faire ?';
+
+    const btnRemove = document.createElement('button');
+    btnRemove.className = 'btn danger full';
+    btnRemove.textContent = '🗑️ Retirer de ma collection';
+    btnRemove.onclick = async () => {
+      closeEncodePopup();
+      await toggleCard(id);
+    };
+
+    const btnCancel = document.createElement('button');
+    btnCancel.className = 'btn full';
+    btnCancel.textContent = '✕ Annuler';
+    btnCancel.onclick = closeEncodePopup;
+
+    actionsEl.appendChild(btnRemove);
+    actionsEl.appendChild(btnCancel);
+  } else {
+    // Nouvelle carte — on l'ajoute directement et on affiche le succès
+    document.getElementById('popup-icon').textContent = '🎉';
+    document.getElementById('popup-title').textContent = 'Nouvelle carte obtenue !';
+    document.getElementById('popup-subtitle').textContent = 'Super ! Cette carte a été ajoutée à ta collection.';
+
+    // Ajouter immédiatement
+    (async () => {
+      await toggleCard(id, true); // silent = true, pas de toast
+    })();
+
+    const btnOk = document.createElement('button');
+    btnOk.className = 'btn success full';
+    btnOk.textContent = '✅ Super, merci !';
+    btnOk.onclick = closeEncodePopup;
+
+    actionsEl.appendChild(btnOk);
+  }
+
+  popup.classList.add('open');
+  // Fermer en cliquant sur le fond
+  popup.onclick = (e) => { if (e.target === popup) closeEncodePopup(); };
+}
+
+function closeEncodePopup() {
+  document.getElementById('encode-popup').classList.remove('open');
+}
+
+
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && document.activeElement.id === 'manual-num') {
     toggleManual();
   }
+  if (e.key === 'Escape') {
+    closeEncodePopup();
+  }
 });
-
-// ─── MODAL ────────────────────────────────────────────────────────
 function openModal(id) {
   modalCard = id;
   const owned = collection[id];
@@ -826,28 +959,59 @@ async function toggleCamera() {
   }
   btn.textContent = '⏳ Activation...';
   btn.disabled = true;
+
+  // Vérifier si l'API est disponible
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast('error', '❌', 'Caméra non supportée. Utilise HTTPS ou un navigateur récent.');
+    btn.textContent = '▶ Activer caméra';
+    btn.disabled = false;
+    return;
+  }
+
   try {
-    const constraints = {
-      video: {
-        facingMode: { ideal: 'environment' },
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
-      }
-    };
-    camStream = await navigator.mediaDevices.getUserMedia(constraints);
+    // Essayer d'abord la caméra arrière (mobile), puis n'importe quelle caméra
+    let stream = null;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+    } catch (e) {
+      // Fallback : caméra quelconque sans contraintes avancées
+      stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    }
+
+    camStream = stream;
     const video = document.getElementById('video-feed');
-    video.srcObject = camStream;
-    await video.play();
+    video.srcObject = stream;
+
+    // Attendre que la vidéo soit prête avant de jouer
+    await new Promise((resolve, reject) => {
+      video.onloadedmetadata = resolve;
+      video.onerror = reject;
+      setTimeout(resolve, 3000); // timeout de sécurité
+    });
+
+    try { await video.play(); } catch(e) { /* autoplay peut échouer silencieusement */ }
+
     document.getElementById('btn-snap').style.display = '';
     document.getElementById('btn-autoscan').style.display = '';
     document.getElementById('scan-status').textContent = '📷 Caméra active';
     btn.textContent = '⏹ Désactiver';
     btn.disabled = false;
 
-    // Init Tesseract worker
     if (!worker) initTesseract();
   } catch (err) {
-    showToast('error', '❌', 'Impossible d\'accéder à la caméra : ' + err.message);
+    let msg = 'Impossible d\'accéder à la caméra.';
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      msg = 'Permission refusée. Autorise la caméra dans ton navigateur.';
+    } else if (err.name === 'NotFoundError') {
+      msg = 'Aucune caméra détectée sur cet appareil.';
+    } else if (err.name === 'NotReadableError') {
+      msg = 'Caméra déjà utilisée par une autre application.';
+    } else if (err.name === 'SecurityError') {
+      msg = 'Erreur de sécurité. La page doit être en HTTPS.';
+    }
+    showToast('error', '❌', msg);
     btn.textContent = '▶ Activer caméra';
     btn.disabled = false;
   }
@@ -965,11 +1129,7 @@ function processOCRResult(raw) {
   badge.className = 'scan-result-badge ' + (owned ? 'owned' : 'missing');
 
   if (!owned) {
-    showToast('info', '📥', `Carte #${id} manquante ! Cliquez pour l'ajouter.`);
-    // Auto-add when scanning: ask
-    if (confirm(`Carte #${id} détectée et MANQUANTE. L'ajouter à ta collection ?`)) {
-      toggleCard(id);
-    }
+    showEncodePopup(id);
   } else {
     showToast('success', '✅', `Carte #${id} déjà dans ta collection !`);
   }
