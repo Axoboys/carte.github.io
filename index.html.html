@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PokéDex Collection</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0a0a12;
+    --surface: #12121e;
+    --surface2: #1a1a2e;
+    --border: #2a2a45;
+    --text: #e8e8f0;
+    --muted: #7878a0;
+    --accent: #f5a623;
+    --accent2: #e8b4f8;
+    --red: #ff4757;
+    --green: #2ed573;
+    --blue: #5352ed;
+    --card-w: 63mm;
+    --card-h: 88mm;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    color: var(--accent);
+    text-shadow: 0 0 20px rgba(245,166,35,0.5);
+    letter-spacing: 1px;
+  }
+
+  .logo span { color: var(--accent2); }
+
+  .stats-bar {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-val {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .progress-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .progress-bar {
+    width: 200px;
+    height: 8px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue), var(--accent2));
+    border-radius: 99px;
+    transition: width 0.5s ease;
+  }
+
+  .progress-pct {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent2);
+  }
+
+  /* MAIN LAYOUT */
+  .app {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    height: calc(100vh - 64px);
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-section {
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+
+  /* SCANNER */
+  .scanner-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #video-feed {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+    background: #000;
+  }
+
+  .scan-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.8);
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* CARD NUMBER ZONE — bottom strip highlighted */
+  .card-number-zone {
+    position: absolute;
+    bottom: 36px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70%;
+    height: 28px;
+    border: 2px solid var(--red);
+    border-radius: 4px;
+    box-shadow: 0 0 0 2px rgba(255,71,87,0.3), 0 0 12px rgba(255,71,87,0.4);
+    pointer-events: none;
+  }
+
+  .zone-label {
+    position: absolute;
+    top: -18px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 9px;
+    color: var(--red);
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .scan-status {
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .scan-result-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 99px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .scan-result-badge.found { background: rgba(46,213,115,0.15); color: var(--green); border-color: var(--green); }
+  .scan-result-badge.missing { background: rgba(255,71,87,0.15); color: var(--red); border-color: var(--red); }
+  .scan-result-badge.owned { background: rgba(83,82,237,0.15); color: #818cf8; border-color: var(--blue); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn:hover { background: var(--border); }
+  .btn.primary { background: var(--accent); color: #000; border-color: var(--accent); }
+  .btn.primary:hover { background: #e6971a; }
+  .btn.danger { background: rgba(255,71,87,0.15); color: var(--red); border-color: var(--red); }
+  .btn.success { background: rgba(46,213,115,0.15); color: var(--green); border-color: var(--green); }
+  .btn.full { width: 100%; justify-content: center; }
+
+  /* MANUAL INPUT */
+  .input-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  input[type="number"], input[type="text"], select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input:focus, select:focus { border-color: var(--accent); }
+
+  input[type="number"] { width: 90px; }
+
+  /* FILTERS */
+  .filter-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .pill {
+    padding: 0.3rem 0.7rem;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .pill.active { background: var(--accent); color: #000; border-color: var(--accent); }
+  .pill.owned-pill.active { background: var(--green); color: #000; border-color: var(--green); }
+  .pill.missing-pill.active { background: var(--red); color: #fff; border-color: var(--red); }
+
+  /* SEARCH */
+  .search-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    outline: none;
+  }
+
+  .search-input:focus { border-color: var(--accent); }
+
+  /* GRID */
+  .main-content {
+    overflow-y: auto;
+    padding: 1.5rem;
+    background: var(--bg);
+  }
+
+  .grid-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .grid-title {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .grid-title strong { color: var(--text); }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 6px;
+  }
+
+  /* CARD TILE */
+  .card-tile {
+    aspect-ratio: 63/88;
+    border-radius: 6px;
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  .card-tile:hover {
+    border-color: var(--accent);
+    transform: scale(1.05);
+    z-index: 2;
+  }
+
+  .card-tile.owned {
+    background: rgba(46,213,115,0.08);
+    border-color: var(--green);
+  }
+
+  .card-tile.owned::after {
+    content: '✓';
+    position: absolute;
+    top: 3px;
+    right: 4px;
+    font-size: 10px;
+    color: var(--green);
+    font-weight: 700;
+  }
+
+  .card-tile.just-found {
+    animation: flash-green 0.6s ease;
+  }
+
+  @keyframes flash-green {
+    0% { box-shadow: 0 0 0 0 rgba(46,213,115,0.8); }
+    50% { box-shadow: 0 0 0 8px rgba(46,213,115,0.4); transform: scale(1.1); }
+    100% { box-shadow: 0 0 0 0 rgba(46,213,115,0); }
+  }
+
+  .card-num {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .card-tile.owned .card-num { color: var(--green); }
+
+  .card-sub {
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    max-width: 300px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: var(--green); }
+  .toast.error { border-color: var(--red); }
+  .toast.info { border-color: var(--blue); }
+
+  .toast-icon { font-size: 1.3rem; }
+
+  /* MODAL */
+  .modal-bg {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  .modal-bg.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    width: 380px;
+    max-width: 90vw;
+  }
+
+  .modal h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+  }
+
+  .modal-card-num {
+    font-size: 3rem;
+    font-weight: 700;
+    text-align: center;
+    margin: 1rem 0;
+  }
+
+  .modal-card-num.owned { color: var(--green); }
+  .modal-card-num.missing { color: var(--muted); }
+
+  .modal-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+  }
+
+  /* LOADING SCANNER */
+  .scanner-loading {
+    position: absolute;
+    inset: 0;
+    background: rgba(10,10,18,0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--accent);
+  }
+
+  .spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .scan-btn-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  /* Responsive */
+  @media (max-width: 800px) {
+    .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    .sidebar { max-height: 50vh; }
+    .stats-bar { display: none; }
+    .logo { font-size: 10px; }
+    .progress-bar { width: 120px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Poké<span>Dex</span> Tracker</div>
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-val" id="hdr-owned">0</div>
+      <div class="stat-label">Possédées</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="hdr-missing">1025</div>
+      <div class="stat-label">Manquantes</div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      <div class="progress-pct" id="progress-pct">0%</div>
+    </div>
+  </div>
+</header>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <!-- SCANNER -->
+    <div class="sidebar-section">
+      <div class="section-title">📷 Scanner une carte</div>
+      <div class="scanner-box" id="scanner-box">
+        <video id="video-feed" autoplay playsinline muted></video>
+        <div class="card-number-zone">
+          <div class="zone-label">Numéro ici</div>
+        </div>
+        <div class="scan-overlay">
+          <span class="scan-status" id="scan-status">Caméra inactive</span>
+          <span class="scan-result-badge" id="scan-badge">–</span>
+        </div>
+        <div class="scanner-loading" id="scanner-loading" style="display:none">
+          <div class="spinner"></div>
+          <span id="ocr-status">Analyse en cours...</span>
+        </div>
+      </div>
+      <div class="scan-btn-row">
+        <button class="btn primary" id="btn-cam" onclick="toggleCamera()">▶ Activer caméra</button>
+        <button class="btn" id="btn-snap" onclick="snapAndScan()" style="display:none">📸 Scanner</button>
+        <button class="btn" id="btn-autoscan" onclick="toggleAutoScan()" style="display:none">🔄 Auto</button>
+      </div>
+      <canvas id="snap-canvas" style="display:none"></canvas>
+    </div>
+
+    <!-- AJOUT MANUEL -->
+    <div class="sidebar-section">
+      <div class="section-title">✏️ Saisie manuelle</div>
+      <div class="input-row">
+        <input type="number" id="manual-num" placeholder="N° carte" min="1" max="1025" />
+        <button class="btn success" onclick="toggleManual()">Ajouter/Retirer</button>
+      </div>
+      <div style="margin-top:0.5rem; font-size:0.75rem; color: var(--muted);">Entrée rapide : appuyez sur Entrée</div>
+    </div>
+
+    <!-- ACTIONS GLOBALES -->
+    <div class="sidebar-section">
+      <div class="section-title">⚙️ Actions</div>
+      <div style="display:flex; flex-direction:column; gap:0.5rem;">
+        <button class="btn" onclick="exportData()">💾 Exporter JSON</button>
+        <button class="btn" onclick="document.getElementById('import-file').click()">📂 Importer JSON</button>
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)"/>
+        <button class="btn danger" onclick="confirmReset()">🗑️ Réinitialiser tout</button>
+      </div>
+    </div>
+
+    <!-- FILTRES -->
+    <div class="sidebar-section">
+      <div class="section-title">🔍 Filtres</div>
+      <input type="text" class="search-input" id="search" placeholder="Rechercher un numéro..." oninput="renderGrid()" style="margin-bottom:0.75rem"/>
+      <div class="filter-pills">
+        <div class="pill active" onclick="setFilter('all', this)">Toutes</div>
+        <div class="pill owned-pill" onclick="setFilter('owned', this)">Possédées</div>
+        <div class="pill missing-pill" onclick="setFilter('missing', this)">Manquantes</div>
+      </div>
+    </div>
+
+    <!-- LÉGENDE -->
+    <div class="sidebar-section">
+      <div class="section-title">Légende</div>
+      <div style="display:flex; flex-direction:column; gap:0.5rem; font-size:0.8rem;">
+        <div style="display:flex; align-items:center; gap:0.5rem;"><div style="width:28px;height:20px;background:rgba(46,213,115,0.08);border:1.5px solid var(--green);border-radius:4px;"></div> Possédée</div>
+        <div style="display:flex; align-items:center; gap:0.5rem;"><div style="width:28px;height:20px;background:var(--surface2);border:1.5px solid var(--border);border-radius:4px;"></div> Manquante</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN GRID -->
+  <main class="main-content">
+    <div class="grid-controls">
+      <div class="grid-title">Affichage : <strong id="grid-count">1025</strong> cartes</div>
+      <button class="btn" onclick="renderGrid()">🔄 Rafraîchir</button>
+    </div>
+    <div class="card-grid" id="card-grid"></div>
+  </main>
+</div>
+
+<!-- MODAL DÉTAIL CARTE -->
+<div class="modal-bg" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <h2>Détail carte</h2>
+    <div class="modal-card-num" id="modal-num">001</div>
+    <div style="text-align:center; color: var(--muted); font-size:0.85rem;" id="modal-status">Statut</div>
+    <div class="modal-actions">
+      <button class="btn success full" id="modal-toggle-btn" onclick="modalToggle()">Marquer possédée</button>
+      <button class="btn full" onclick="closeModalBtn()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon">✅</span>
+  <span id="toast-msg">Message</span>
+</div>
+
+<script>
+// ─── DATABASE (IndexedDB) ─────────────────────────────────────────
+const DB_NAME = 'pokecollection';
+const DB_VERSION = 1;
+let db;
+let collection = {}; // { "001": false, "002": true, ... }
+let currentFilter = 'all';
+let modalCard = null;
+let camStream = null;
+let autoScanInterval = null;
+let autoScanActive = false;
+let tesseractReady = false;
+let worker = null;
+
+function padNum(n) {
+  return String(n).padStart(3, '0');
+}
+
+// Init collection with all 1025 cards = false
+function initCollection() {
+  for (let i = 1; i <= 1025; i++) {
+    collection[padNum(i)] = false;
+  }
+}
+
+// Open IndexedDB
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('cards')) {
+        db.createObjectStore('cards', { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = (e) => { db = e.target.result; resolve(db); };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function loadFromDB() {
+  return new Promise((resolve) => {
+    const tx = db.transaction('cards', 'readonly');
+    const store = tx.objectStore('cards');
+    const req = store.getAll();
+    req.onsuccess = () => {
+      const rows = req.result;
+      if (rows.length > 0) {
+        rows.forEach(r => { collection[r.id] = r.owned; });
+        resolve(true);
+      } else {
+        // First time: save all 1025
+        saveAllToDB().then(() => resolve(false));
+      }
+    };
+  });
+}
+
+async function saveAllToDB() {
+  const tx = db.transaction('cards', 'readwrite');
+  const store = tx.objectStore('cards');
+  for (const [id, owned] of Object.entries(collection)) {
+    store.put({ id, owned });
+  }
+  return new Promise(r => tx.oncomplete = r);
+}
+
+async function saveCard(id) {
+  return new Promise((resolve) => {
+    const tx = db.transaction('cards', 'readwrite');
+    const store = tx.objectStore('cards');
+    store.put({ id, owned: collection[id] });
+    tx.oncomplete = resolve;
+  });
+}
+
+// ─── STATS ────────────────────────────────────────────────────────
+function updateStats() {
+  const owned = Object.values(collection).filter(Boolean).length;
+  const missing = 1025 - owned;
+  const pct = Math.round((owned / 1025) * 100);
+  document.getElementById('hdr-owned').textContent = owned;
+  document.getElementById('hdr-missing').textContent = missing;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-pct').textContent = pct + '%';
+}
+
+// ─── GRID RENDER ──────────────────────────────────────────────────
+function renderGrid() {
+  const grid = document.getElementById('card-grid');
+  const search = document.getElementById('search').value.trim();
+  let cards = Object.entries(collection);
+
+  if (currentFilter === 'owned') cards = cards.filter(([, v]) => v);
+  if (currentFilter === 'missing') cards = cards.filter(([, v]) => !v);
+  if (search) cards = cards.filter(([k]) => k.includes(search) || k.includes(search.padStart(3,'0')));
+
+  document.getElementById('grid-count').textContent = cards.length;
+
+  grid.innerHTML = '';
+  const frag = document.createDocumentFragment();
+  cards.forEach(([id, owned]) => {
+    const tile = document.createElement('div');
+    tile.className = 'card-tile' + (owned ? ' owned' : '');
+    tile.dataset.id = id;
+    tile.innerHTML = `<div class="card-num">${id}</div>`;
+    tile.onclick = () => openModal(id);
+    frag.appendChild(tile);
+  });
+  grid.appendChild(frag);
+}
+
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderGrid();
+}
+
+// ─── TOGGLE CARD ──────────────────────────────────────────────────
+async function toggleCard(id, silent = false) {
+  if (!collection.hasOwnProperty(id)) return;
+  collection[id] = !collection[id];
+  await saveCard(id);
+  updateStats();
+  // Update tile if visible
+  const tile = document.querySelector(`.card-tile[data-id="${id}"]`);
+  if (tile) {
+    if (collection[id]) {
+      tile.classList.add('owned', 'just-found');
+      setTimeout(() => tile.classList.remove('just-found'), 700);
+    } else {
+      tile.classList.remove('owned');
+    }
+  }
+  if (!silent) {
+    if (collection[id]) {
+      showToast('success', '✅', `Carte #${id} marquée comme possédée !`);
+    } else {
+      showToast('info', '↩️', `Carte #${id} retirée de la collection.`);
+    }
+  }
+  return collection[id];
+}
+
+// ─── MANUAL INPUT ─────────────────────────────────────────────────
+async function toggleManual() {
+  const input = document.getElementById('manual-num');
+  const num = parseInt(input.value);
+  if (!num || num < 1 || num > 1025) {
+    showToast('error', '❌', 'Numéro invalide (1–1025)');
+    return;
+  }
+  const id = padNum(num);
+  await toggleCard(id);
+  input.value = '';
+  input.focus();
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && document.activeElement.id === 'manual-num') {
+    toggleManual();
+  }
+});
+
+// ─── MODAL ────────────────────────────────────────────────────────
+function openModal(id) {
+  modalCard = id;
+  const owned = collection[id];
+  const numEl = document.getElementById('modal-num');
+  numEl.textContent = '#' + id;
+  numEl.className = 'modal-card-num ' + (owned ? 'owned' : 'missing');
+  document.getElementById('modal-status').textContent = owned ? '✅ Dans ta collection' : '❌ Carte manquante';
+  const btn = document.getElementById('modal-toggle-btn');
+  btn.textContent = owned ? '✕ Retirer de la collection' : '✓ Marquer comme possédée';
+  btn.className = owned ? 'btn danger full' : 'btn success full';
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target.id === 'modal') closeModalBtn();
+}
+
+function closeModalBtn() {
+  document.getElementById('modal').classList.remove('open');
+  modalCard = null;
+}
+
+async function modalToggle() {
+  if (!modalCard) return;
+  await toggleCard(modalCard);
+  openModal(modalCard); // refresh
+}
+
+// ─── CAMERA ───────────────────────────────────────────────────────
+async function toggleCamera() {
+  const btn = document.getElementById('btn-cam');
+  if (camStream) {
+    stopCamera();
+    btn.textContent = '▶ Activer caméra';
+    return;
+  }
+  btn.textContent = '⏳ Activation...';
+  btn.disabled = true;
+  try {
+    const constraints = {
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      }
+    };
+    camStream = await navigator.mediaDevices.getUserMedia(constraints);
+    const video = document.getElementById('video-feed');
+    video.srcObject = camStream;
+    await video.play();
+    document.getElementById('btn-snap').style.display = '';
+    document.getElementById('btn-autoscan').style.display = '';
+    document.getElementById('scan-status').textContent = '📷 Caméra active';
+    btn.textContent = '⏹ Désactiver';
+    btn.disabled = false;
+
+    // Init Tesseract worker
+    if (!worker) initTesseract();
+  } catch (err) {
+    showToast('error', '❌', 'Impossible d\'accéder à la caméra : ' + err.message);
+    btn.textContent = '▶ Activer caméra';
+    btn.disabled = false;
+  }
+}
+
+function stopCamera() {
+  if (camStream) {
+    camStream.getTracks().forEach(t => t.stop());
+    camStream = null;
+  }
+  if (autoScanActive) toggleAutoScan();
+  document.getElementById('video-feed').srcObject = null;
+  document.getElementById('btn-snap').style.display = 'none';
+  document.getElementById('btn-autoscan').style.display = 'none';
+  document.getElementById('scan-status').textContent = 'Caméra inactive';
+  document.getElementById('btn-cam').disabled = false;
+}
+
+async function initTesseract() {
+  try {
+    document.getElementById('ocr-status').textContent = 'Chargement OCR...';
+    document.getElementById('scanner-loading').style.display = 'flex';
+    worker = await Tesseract.createWorker('eng', 1, {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          document.getElementById('ocr-status').textContent = 'OCR: ' + Math.round(m.progress * 100) + '%';
+        }
+      }
+    });
+    await worker.setParameters({
+      tessedit_char_whitelist: '0123456789/',
+      tessedit_pageseg_mode: '7',
+    });
+    tesseractReady = true;
+    document.getElementById('scanner-loading').style.display = 'none';
+    document.getElementById('scan-status').textContent = '✅ OCR prêt !';
+  } catch (e) {
+    document.getElementById('scanner-loading').style.display = 'none';
+    document.getElementById('scan-status').textContent = '⚠️ OCR indisponible';
+    showToast('error', '⚠️', 'OCR non disponible : ' + e.message);
+  }
+}
+
+async function snapAndScan() {
+  if (!camStream || !tesseractReady) {
+    showToast('error', '❌', 'Caméra ou OCR non prêt');
+    return;
+  }
+  const video = document.getElementById('video-feed');
+  const canvas = document.getElementById('snap-canvas');
+  const ctx = canvas.getContext('2d');
+
+  // Capture the card number zone (bottom strip of the video)
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.drawImage(video, 0, 0);
+
+  // Crop: bottom 12% of image, center 70%
+  const cropX = Math.floor(canvas.width * 0.15);
+  const cropY = Math.floor(canvas.height * 0.82);
+  const cropW = Math.floor(canvas.width * 0.7);
+  const cropH = Math.floor(canvas.height * 0.1);
+
+  const cropCanvas = document.createElement('canvas');
+  cropCanvas.width = cropW * 3; // upscale for OCR
+  cropCanvas.height = cropH * 3;
+  const cropCtx = cropCanvas.getContext('2d');
+
+  // Contrast boost
+  cropCtx.filter = 'contrast(2) brightness(1.2) grayscale(1)';
+  cropCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropCanvas.width, cropCanvas.height);
+
+  document.getElementById('scanner-loading').style.display = 'flex';
+  document.getElementById('ocr-status').textContent = 'Reconnaissance...';
+
+  try {
+    const result = await worker.recognize(cropCanvas);
+    const raw = result.data.text.trim();
+    processOCRResult(raw);
+  } catch (e) {
+    showToast('error', '❌', 'Erreur OCR');
+  } finally {
+    document.getElementById('scanner-loading').style.display = 'none';
+  }
+}
+
+function processOCRResult(raw) {
+  // Extract number patterns like "001/1025", "025/151", "1/151", bare number
+  const patterns = [
+    /(\d{1,3})\/\d+/,  // "001/1025" format
+    /^(\d{1,4})$/,     // bare number
+    /No\.?\s*(\d{1,3})/i,
+  ];
+
+  let cardNum = null;
+  for (const pat of patterns) {
+    const m = raw.match(pat);
+    if (m) { cardNum = parseInt(m[1]); break; }
+  }
+
+  const badge = document.getElementById('scan-badge');
+  const statusEl = document.getElementById('scan-status');
+
+  if (!cardNum || cardNum < 1 || cardNum > 1025) {
+    statusEl.textContent = `Texte: "${raw.substring(0, 20)}"`;
+    badge.textContent = '? Introuvable';
+    badge.className = 'scan-result-badge';
+    return;
+  }
+
+  const id = padNum(cardNum);
+  const owned = collection[id];
+  statusEl.textContent = `Carte #${id} détectée`;
+  badge.textContent = owned ? '✓ Possédée' : '✕ Manquante';
+  badge.className = 'scan-result-badge ' + (owned ? 'owned' : 'missing');
+
+  if (!owned) {
+    showToast('info', '📥', `Carte #${id} manquante ! Cliquez pour l'ajouter.`);
+    // Auto-add when scanning: ask
+    if (confirm(`Carte #${id} détectée et MANQUANTE. L'ajouter à ta collection ?`)) {
+      toggleCard(id);
+    }
+  } else {
+    showToast('success', '✅', `Carte #${id} déjà dans ta collection !`);
+  }
+}
+
+function toggleAutoScan() {
+  const btn = document.getElementById('btn-autoscan');
+  if (autoScanActive) {
+    clearInterval(autoScanInterval);
+    autoScanInterval = null;
+    autoScanActive = false;
+    btn.textContent = '🔄 Auto';
+    btn.classList.remove('primary');
+  } else {
+    autoScanActive = true;
+    btn.textContent = '⏹ Stop Auto';
+    btn.classList.add('primary');
+    autoScanInterval = setInterval(() => {
+      if (tesseractReady && camStream) snapAndScan();
+    }, 3000);
+  }
+}
+
+// ─── EXPORT / IMPORT ──────────────────────────────────────────────
+function exportData() {
+  const owned = Object.entries(collection).filter(([, v]) => v).map(([k]) => k);
+  const data = { version: 1, date: new Date().toISOString(), owned, total: owned.length };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `pokecollection_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  showToast('success', '💾', 'Collection exportée !');
+}
+
+async function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (data.owned && Array.isArray(data.owned)) {
+      initCollection();
+      data.owned.forEach(id => { if (collection.hasOwnProperty(id)) collection[id] = true; });
+      await saveAllToDB();
+      updateStats();
+      renderGrid();
+      showToast('success', '📂', `${data.owned.length} cartes importées !`);
+    }
+  } catch (e) {
+    showToast('error', '❌', 'Erreur d\'importation : fichier invalide');
+  }
+  event.target.value = '';
+}
+
+async function confirmReset() {
+  if (!confirm('Réinitialiser TOUTE la collection ? Cette action est irréversible.')) return;
+  initCollection();
+  await saveAllToDB();
+  updateStats();
+  renderGrid();
+  showToast('info', '🗑️', 'Collection réinitialisée.');
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(type, icon, msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').textContent = icon;
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = 'toast'; }, 3500);
+}
+
+// ─── INIT ────────────────────────────────────────────────────────
+async function init() {
+  initCollection();
+  await openDB();
+  await loadFromDB();
+  updateStats();
+  renderGrid();
+}
+
+init();
+</script>
+</body>
+</html>
