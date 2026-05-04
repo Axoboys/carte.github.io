@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PokéDex Collection</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js"></script>
+<script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@300;400;500;600;700&display=swap');
 
@@ -586,31 +586,6 @@
   <!-- SIDEBAR -->
   <aside class="sidebar">
 
-    <!-- SCANNER -->
-    <div class="sidebar-section">
-      <div class="section-title">📷 Scanner une carte</div>
-      <div class="scanner-box" id="scanner-box">
-        <video id="video-feed" autoplay playsinline muted></video>
-        <div class="card-number-zone">
-          <div class="zone-label">Numéro ici</div>
-        </div>
-        <div class="scan-overlay">
-          <span class="scan-status" id="scan-status">Caméra inactive</span>
-          <span class="scan-result-badge" id="scan-badge">–</span>
-        </div>
-        <div class="scanner-loading" id="scanner-loading" style="display:none">
-          <div class="spinner"></div>
-          <span id="ocr-status">Analyse en cours...</span>
-        </div>
-      </div>
-      <div class="scan-btn-row">
-        <button class="btn primary" id="btn-cam" onclick="toggleCamera()">▶ Activer caméra</button>
-        <button class="btn" id="btn-snap" onclick="snapAndScan()" style="display:none">📸 Scanner</button>
-        <button class="btn" id="btn-autoscan" onclick="toggleAutoScan()" style="display:none">🔄 Auto</button>
-      </div>
-      <canvas id="snap-canvas" style="display:none"></canvas>
-    </div>
-
     <!-- AJOUT MANUEL -->
     <div class="sidebar-section">
       <div class="section-title">✏️ Saisie manuelle</div>
@@ -701,11 +676,7 @@ let db;
 let collection = {}; // { "001": false, "002": true, ... }
 let currentFilter = 'all';
 let modalCard = null;
-let camStream = null;
-let autoScanInterval = null;
-let autoScanActive = false;
-let tesseractReady = false;
-let worker = null;
+let popupIsOwned = false; // track si le popup ouvert est pour carte possédée
 
 function padNum(n) {
   return String(n).padStart(3, '0');
@@ -855,6 +826,7 @@ async function toggleManual() {
 // ─── POPUP ENCODAGE ───────────────────────────────────────────────
 function showEncodePopup(id) {
   const owned = collection[id];
+  popupIsOwned = owned;
   const popup = document.getElementById('encode-popup');
   document.getElementById('popup-card-num').textContent = '#' + id;
   document.getElementById('popup-card-num').className = 'popup-card-num ' + (owned ? 'owned' : 'new');
@@ -889,10 +861,7 @@ function showEncodePopup(id) {
     document.getElementById('popup-title').textContent = 'Nouvelle carte obtenue !';
     document.getElementById('popup-subtitle').textContent = 'Super ! Cette carte a été ajoutée à ta collection.';
 
-    // Ajouter immédiatement
-    (async () => {
-      await toggleCard(id, true); // silent = true, pas de toast
-    })();
+    (async () => { await toggleCard(id, true); })();
 
     const btnOk = document.createElement('button');
     btnOk.className = 'btn success full';
@@ -903,21 +872,29 @@ function showEncodePopup(id) {
   }
 
   popup.classList.add('open');
-  // Fermer en cliquant sur le fond
   popup.onclick = (e) => { if (e.target === popup) closeEncodePopup(); };
 }
 
 function closeEncodePopup() {
   document.getElementById('encode-popup').classList.remove('open');
+  // Remettre le focus sur le champ de saisie
+  document.getElementById('manual-num').focus();
 }
 
 
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && document.activeElement.id === 'manual-num') {
-    toggleManual();
+  const popupOpen = document.getElementById('encode-popup').classList.contains('open');
+
+  if (e.key === 'Enter') {
+    if (popupOpen && popupIsOwned) {
+      // Entrée = annuler sur le popup "carte déjà possédée"
+      closeEncodePopup();
+    } else if (!popupOpen && document.activeElement.id === 'manual-num') {
+      toggleManual();
+    }
   }
-  if (e.key === 'Escape') {
+  if (e.key === 'Escape' && popupOpen) {
     closeEncodePopup();
   }
 });
@@ -947,210 +924,6 @@ async function modalToggle() {
   if (!modalCard) return;
   await toggleCard(modalCard);
   openModal(modalCard); // refresh
-}
-
-// ─── CAMERA ───────────────────────────────────────────────────────
-async function toggleCamera() {
-  const btn = document.getElementById('btn-cam');
-  if (camStream) {
-    stopCamera();
-    btn.textContent = '▶ Activer caméra';
-    return;
-  }
-  btn.textContent = '⏳ Activation...';
-  btn.disabled = true;
-
-  // Vérifier si l'API est disponible
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showToast('error', '❌', 'Caméra non supportée. Utilise HTTPS ou un navigateur récent.');
-    btn.textContent = '▶ Activer caméra';
-    btn.disabled = false;
-    return;
-  }
-
-  try {
-    // Essayer d'abord la caméra arrière (mobile), puis n'importe quelle caméra
-    let stream = null;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
-      });
-    } catch (e) {
-      // Fallback : caméra quelconque sans contraintes avancées
-      stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    }
-
-    camStream = stream;
-    const video = document.getElementById('video-feed');
-    video.srcObject = stream;
-
-    // Attendre que la vidéo soit prête avant de jouer
-    await new Promise((resolve, reject) => {
-      video.onloadedmetadata = resolve;
-      video.onerror = reject;
-      setTimeout(resolve, 3000); // timeout de sécurité
-    });
-
-    try { await video.play(); } catch(e) { /* autoplay peut échouer silencieusement */ }
-
-    document.getElementById('btn-snap').style.display = '';
-    document.getElementById('btn-autoscan').style.display = '';
-    document.getElementById('scan-status').textContent = '📷 Caméra active';
-    btn.textContent = '⏹ Désactiver';
-    btn.disabled = false;
-
-    if (!worker) initTesseract();
-  } catch (err) {
-    let msg = 'Impossible d\'accéder à la caméra.';
-    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-      msg = 'Permission refusée. Autorise la caméra dans ton navigateur.';
-    } else if (err.name === 'NotFoundError') {
-      msg = 'Aucune caméra détectée sur cet appareil.';
-    } else if (err.name === 'NotReadableError') {
-      msg = 'Caméra déjà utilisée par une autre application.';
-    } else if (err.name === 'SecurityError') {
-      msg = 'Erreur de sécurité. La page doit être en HTTPS.';
-    }
-    showToast('error', '❌', msg);
-    btn.textContent = '▶ Activer caméra';
-    btn.disabled = false;
-  }
-}
-
-function stopCamera() {
-  if (camStream) {
-    camStream.getTracks().forEach(t => t.stop());
-    camStream = null;
-  }
-  if (autoScanActive) toggleAutoScan();
-  document.getElementById('video-feed').srcObject = null;
-  document.getElementById('btn-snap').style.display = 'none';
-  document.getElementById('btn-autoscan').style.display = 'none';
-  document.getElementById('scan-status').textContent = 'Caméra inactive';
-  document.getElementById('btn-cam').disabled = false;
-}
-
-async function initTesseract() {
-  try {
-    document.getElementById('ocr-status').textContent = 'Chargement OCR...';
-    document.getElementById('scanner-loading').style.display = 'flex';
-    worker = await Tesseract.createWorker('eng', 1, {
-      logger: m => {
-        if (m.status === 'recognizing text') {
-          document.getElementById('ocr-status').textContent = 'OCR: ' + Math.round(m.progress * 100) + '%';
-        }
-      }
-    });
-    await worker.setParameters({
-      tessedit_char_whitelist: '0123456789/',
-      tessedit_pageseg_mode: '7',
-    });
-    tesseractReady = true;
-    document.getElementById('scanner-loading').style.display = 'none';
-    document.getElementById('scan-status').textContent = '✅ OCR prêt !';
-  } catch (e) {
-    document.getElementById('scanner-loading').style.display = 'none';
-    document.getElementById('scan-status').textContent = '⚠️ OCR indisponible';
-    showToast('error', '⚠️', 'OCR non disponible : ' + e.message);
-  }
-}
-
-async function snapAndScan() {
-  if (!camStream || !tesseractReady) {
-    showToast('error', '❌', 'Caméra ou OCR non prêt');
-    return;
-  }
-  const video = document.getElementById('video-feed');
-  const canvas = document.getElementById('snap-canvas');
-  const ctx = canvas.getContext('2d');
-
-  // Capture the card number zone (bottom strip of the video)
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  ctx.drawImage(video, 0, 0);
-
-  // Crop: bottom 12% of image, center 70%
-  const cropX = Math.floor(canvas.width * 0.15);
-  const cropY = Math.floor(canvas.height * 0.82);
-  const cropW = Math.floor(canvas.width * 0.7);
-  const cropH = Math.floor(canvas.height * 0.1);
-
-  const cropCanvas = document.createElement('canvas');
-  cropCanvas.width = cropW * 3; // upscale for OCR
-  cropCanvas.height = cropH * 3;
-  const cropCtx = cropCanvas.getContext('2d');
-
-  // Contrast boost
-  cropCtx.filter = 'contrast(2) brightness(1.2) grayscale(1)';
-  cropCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropCanvas.width, cropCanvas.height);
-
-  document.getElementById('scanner-loading').style.display = 'flex';
-  document.getElementById('ocr-status').textContent = 'Reconnaissance...';
-
-  try {
-    const result = await worker.recognize(cropCanvas);
-    const raw = result.data.text.trim();
-    processOCRResult(raw);
-  } catch (e) {
-    showToast('error', '❌', 'Erreur OCR');
-  } finally {
-    document.getElementById('scanner-loading').style.display = 'none';
-  }
-}
-
-function processOCRResult(raw) {
-  // Extract number patterns like "001/1025", "025/151", "1/151", bare number
-  const patterns = [
-    /(\d{1,3})\/\d+/,  // "001/1025" format
-    /^(\d{1,4})$/,     // bare number
-    /No\.?\s*(\d{1,3})/i,
-  ];
-
-  let cardNum = null;
-  for (const pat of patterns) {
-    const m = raw.match(pat);
-    if (m) { cardNum = parseInt(m[1]); break; }
-  }
-
-  const badge = document.getElementById('scan-badge');
-  const statusEl = document.getElementById('scan-status');
-
-  if (!cardNum || cardNum < 1 || cardNum > 1025) {
-    statusEl.textContent = `Texte: "${raw.substring(0, 20)}"`;
-    badge.textContent = '? Introuvable';
-    badge.className = 'scan-result-badge';
-    return;
-  }
-
-  const id = padNum(cardNum);
-  const owned = collection[id];
-  statusEl.textContent = `Carte #${id} détectée`;
-  badge.textContent = owned ? '✓ Possédée' : '✕ Manquante';
-  badge.className = 'scan-result-badge ' + (owned ? 'owned' : 'missing');
-
-  if (!owned) {
-    showEncodePopup(id);
-  } else {
-    showToast('success', '✅', `Carte #${id} déjà dans ta collection !`);
-  }
-}
-
-function toggleAutoScan() {
-  const btn = document.getElementById('btn-autoscan');
-  if (autoScanActive) {
-    clearInterval(autoScanInterval);
-    autoScanInterval = null;
-    autoScanActive = false;
-    btn.textContent = '🔄 Auto';
-    btn.classList.remove('primary');
-  } else {
-    autoScanActive = true;
-    btn.textContent = '⏹ Stop Auto';
-    btn.classList.add('primary');
-    autoScanInterval = setInterval(() => {
-      if (tesseractReady && camStream) snapAndScan();
-    }, 3000);
-  }
 }
 
 // ─── EXPORT / IMPORT ──────────────────────────────────────────────
