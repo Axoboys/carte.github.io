@@ -551,6 +551,53 @@
     margin-top: 1.25rem;
   }
 
+  /* SHINY MODE */
+  .shiny-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 999px;
+    padding: 0.35rem 1rem;
+    cursor: pointer;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+  .shiny-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .shiny-toggle.active {
+    background: linear-gradient(135deg, #1a1200, #2a1f00);
+    border-color: #f5c842;
+    color: #f5c842;
+    box-shadow: 0 0 14px rgba(245,200,66,0.3);
+  }
+
+  /* Shiny card tiles */
+  body.shiny-mode .card-tile.owned {
+    background: linear-gradient(135deg, rgba(245,200,66,0.12), rgba(248,160,60,0.08));
+    border-color: #f5c842;
+    box-shadow: 0 0 10px rgba(245,200,66,0.25), inset 0 0 20px rgba(245,200,66,0.05);
+  }
+  body.shiny-mode .card-tile.owned .card-num { color: #f5c842; }
+  body.shiny-mode .card-tile.owned::after {
+    content: '✨';
+    position: absolute;
+    top: 3px;
+    right: 4px;
+    font-size: 9px;
+  }
+  body.shiny-mode .card-tile { position: relative; }
+
+  /* Shiny header banner */
+  body.shiny-mode header {
+    background: linear-gradient(135deg, #0d0900, #1a1200, #0d0900);
+    border-bottom-color: #f5c842;
+  }
+  body.shiny-mode .logo span { color: #f5c842; }
+
   /* Responsive */
   @media (max-width: 800px) {
     .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
@@ -579,6 +626,7 @@
       <div class="progress-pct" id="progress-pct">0%</div>
     </div>
   </div>
+  <button class="shiny-toggle" id="shiny-toggle-btn" onclick="toggleShinyMode()">✨ Collection Brillante</button>
 </header>
 
 <div class="app">
@@ -670,12 +718,14 @@
 <script>
 // ─── DATABASE (IndexedDB) ─────────────────────────────────────────
 const DB_NAME = 'pokecollection';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // bump version pour ajouter le store shiny
 let db;
 let collection = {}; // { "001": false, "002": true, ... }
+let shinyCollection = {}; // { "001": false, "002": true, ... }
+let isShinyMode = false;
 let currentFilter = 'all';
 let modalCard = null;
-let popupIsOwned = false; // track si le popup ouvert est pour carte possédée
+let popupIsOwned = false;
 
 function padNum(n) {
   return String(n).padStart(3, '0');
@@ -697,6 +747,9 @@ function openDB() {
       if (!db.objectStoreNames.contains('cards')) {
         db.createObjectStore('cards', { keyPath: 'id' });
       }
+      if (!db.objectStoreNames.contains('shiny')) {
+        db.createObjectStore('shiny', { keyPath: 'id' });
+      }
     };
     req.onsuccess = (e) => { db = e.target.result; resolve(db); };
     req.onerror = () => reject(req.error);
@@ -714,9 +767,21 @@ async function loadFromDB() {
         rows.forEach(r => { collection[r.id] = r.owned; });
         resolve(true);
       } else {
-        // First time: save all 1025
         saveAllToDB().then(() => resolve(false));
       }
+    };
+  });
+}
+
+async function loadShinyFromDB() {
+  return new Promise((resolve) => {
+    const tx = db.transaction('shiny', 'readonly');
+    const store = tx.objectStore('shiny');
+    const req = store.getAll();
+    req.onsuccess = () => {
+      const rows = req.result;
+      rows.forEach(r => { shinyCollection[r.id] = r.owned; });
+      resolve();
     };
   });
 }
@@ -731,17 +796,20 @@ async function saveAllToDB() {
 }
 
 async function saveCard(id) {
+  const storeName = isShinyMode ? 'shiny' : 'cards';
+  const col = isShinyMode ? shinyCollection : collection;
   return new Promise((resolve) => {
-    const tx = db.transaction('cards', 'readwrite');
-    const store = tx.objectStore('cards');
-    store.put({ id, owned: collection[id] });
+    const tx = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    store.put({ id, owned: col[id] });
     tx.oncomplete = resolve;
   });
 }
 
 // ─── STATS ────────────────────────────────────────────────────────
 function updateStats() {
-  const owned = Object.values(collection).filter(Boolean).length;
+  const col = isShinyMode ? shinyCollection : collection;
+  const owned = Object.values(col).filter(Boolean).length;
   const missing = 1025 - owned;
   const pct = Math.round((owned / 1025) * 100);
   document.getElementById('hdr-owned').textContent = owned;
@@ -754,7 +822,8 @@ function updateStats() {
 function renderGrid() {
   const grid = document.getElementById('card-grid');
   const search = document.getElementById('search').value.trim();
-  let cards = Object.entries(collection);
+  const col = isShinyMode ? shinyCollection : collection;
+  let cards = Object.entries(col);
 
   if (currentFilter === 'owned') cards = cards.filter(([, v]) => v);
   if (currentFilter === 'missing') cards = cards.filter(([, v]) => !v);
@@ -769,7 +838,7 @@ function renderGrid() {
     tile.className = 'card-tile' + (owned ? ' owned' : '');
     tile.dataset.id = id;
     tile.innerHTML = `<div class="card-num">${id}</div>`;
-    tile.onclick = () => openModal(id);
+    tile.onclick = () => isShinyMode ? toggleShinyCard(id, tile) : openModal(id);
     frag.appendChild(tile);
   });
   grid.appendChild(frag);
@@ -784,14 +853,14 @@ function setFilter(f, el) {
 
 // ─── TOGGLE CARD ──────────────────────────────────────────────────
 async function toggleCard(id, silent = false) {
-  if (!collection.hasOwnProperty(id)) return;
-  collection[id] = !collection[id];
+  const col = isShinyMode ? shinyCollection : collection;
+  if (!col.hasOwnProperty(id)) return;
+  col[id] = !col[id];
   await saveCard(id);
   updateStats();
-  // Update tile if visible
   const tile = document.querySelector(`.card-tile[data-id="${id}"]`);
   if (tile) {
-    if (collection[id]) {
+    if (col[id]) {
       tile.classList.add('owned', 'just-found');
       setTimeout(() => tile.classList.remove('just-found'), 700);
     } else {
@@ -799,13 +868,30 @@ async function toggleCard(id, silent = false) {
     }
   }
   if (!silent) {
-    if (collection[id]) {
-      showToast('success', '✅', `Carte #${id} marquée comme possédée !`);
+    const col = isShinyMode ? shinyCollection : collection;
+    if (col[id]) {
+      showToast('success', isShinyMode ? '✨' : '✅', `Carte #${id} marquée comme ${isShinyMode ? 'brillante' : 'possédée'} !`);
     } else {
       showToast('info', '↩️', `Carte #${id} retirée de la collection.`);
     }
   }
-  return collection[id];
+  const col2 = isShinyMode ? shinyCollection : collection;
+  return col2[id];
+}
+
+// ─── TOGGLE SHINY CARD (direct, sans popup) ───────────────────────
+async function toggleShinyCard(id, tile) {
+  shinyCollection[id] = !shinyCollection[id];
+  await saveCard(id);
+  updateStats();
+  if (shinyCollection[id]) {
+    tile.classList.add('owned', 'just-found');
+    setTimeout(() => tile.classList.remove('just-found'), 700);
+    showToast('success', '✨', `Carte #${id} brillante ajoutée !`);
+  } else {
+    tile.classList.remove('owned');
+    showToast('info', '↩️', `Carte #${id} retirée de la collection brillante.`);
+  }
 }
 
 // ─── MANUAL INPUT ─────────────────────────────────────────────────
@@ -819,12 +905,18 @@ async function toggleManual() {
   const id = padNum(num);
   input.value = '';
   input.focus();
-  showEncodePopup(id);
+  if (isShinyMode) {
+    // Mode brillant : toggle direct sans popup
+    const tile = document.querySelector(`.card-tile[data-id="${id}"]`);
+    await toggleShinyCard(id, tile);
+  } else {
+    showEncodePopup(id);
+  }
 }
 
 // ─── POPUP ENCODAGE ───────────────────────────────────────────────
 function showEncodePopup(id) {
-  const owned = collection[id];
+  const owned = collection[id]; // popup uniquement en mode normal
   popupIsOwned = owned;
   const popup = document.getElementById('encode-popup');
   document.getElementById('popup-card-num').textContent = '#' + id;
@@ -966,6 +1058,22 @@ async function confirmReset() {
   showToast('info', '🗑️', 'Collection réinitialisée.');
 }
 
+// ─── SHINY MODE ───────────────────────────────────────────────────
+function toggleShinyMode() {
+  isShinyMode = !isShinyMode;
+  document.body.classList.toggle('shiny-mode', isShinyMode);
+  const btn = document.getElementById('shiny-toggle-btn');
+  btn.classList.toggle('active', isShinyMode);
+  btn.textContent = isShinyMode ? '⬅ Collection Normale' : '✨ Collection Brillante';
+  // Masquer/afficher popup selon le mode
+  document.getElementById('encode-popup').classList.remove('open');
+  updateStats();
+  renderGrid();
+  if (isShinyMode) {
+    showToast('info', '✨', 'Mode Brillant activé — clic direct, sans popup !');
+  }
+}
+
 // ─── TOAST ────────────────────────────────────────────────────────
 let toastTimer;
 function showToast(type, icon, msg) {
@@ -978,10 +1086,20 @@ function showToast(type, icon, msg) {
 }
 
 // ─── INIT ────────────────────────────────────────────────────────
+function initShinyCollection() {
+  for (let i = 1; i <= 1025; i++) {
+    const id = padNum(i);
+    if (!shinyCollection.hasOwnProperty(id)) shinyCollection[id] = false;
+  }
+}
+
 async function init() {
   initCollection();
+  initShinyCollection();
   await openDB();
   await loadFromDB();
+  await loadShinyFromDB();
+  initShinyCollection(); // fill any missing keys after DB load
   updateStats();
   renderGrid();
 }
