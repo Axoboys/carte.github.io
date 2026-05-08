@@ -451,7 +451,10 @@ function renderGrid() {
     let inner = `<div class="card-num">${id}</div>`;
     if (tab === 'shiny' && isOwned) inner += `<div class="shiny-indicator">✦</div>`;
     tile.innerHTML = inner;
-    tile.onclick = () => openModal(id, tab);
+    tile.onclick = () => {
+      if (tab === 'shiny') toggleShinyDirect(id);
+      else openModal(id, tab);
+    };
     frag.appendChild(tile);
   });
   grid.appendChild(frag);
@@ -488,7 +491,7 @@ async function applyCard(id, tab, val) {
 }
 
 // ── POPUP ENCODAGE ────────────────────────────────────────────────
-function encodeCard(tab) {
+async function encodeCard(tab) {
   const inputId = tab === 'shiny' ? 'manual-num-shiny' : 'manual-num';
   const input   = document.getElementById(inputId);
   const num     = parseInt(input.value);
@@ -496,6 +499,21 @@ function encodeCard(tab) {
   const id = padNum(num);
   input.value = '';
   input.focus();
+
+  // Pas de popup pour les brillantes : action directe
+  if (tab === 'shiny') {
+    const alreadyOwned = collection[id].shiny;
+    if (alreadyOwned) {
+      await applyCard(id, 'shiny', false);
+      showToast('info','↩️',`Brillante #${id} retirée.`);
+    } else {
+      await applyCard(id, 'shiny', true);
+      spawnConfetti(true);
+      showToast('shiny-toast','✨',`Brillante #${id} ajoutée !`);
+    }
+    return;
+  }
+
   openEncodePopup(id, tab);
 }
 
@@ -588,6 +606,18 @@ document.addEventListener('keydown', e => {
     if (document.activeElement.id === 'manual-num-shiny') encodeCard('shiny');
   }
 });
+
+// ── TOGGLE SHINY DIRECT (sans modal) ─────────────────────────────
+async function toggleShinyDirect(id) {
+  const owned = collection[id].shiny;
+  await applyCard(id, 'shiny', !owned);
+  if (!owned) {
+    spawnConfetti(true);
+    showToast('shiny-toast','✨',`Brillante #${id} ajoutée !`);
+  } else {
+    showToast('info','↩️',`Brillante #${id} retirée.`);
+  }
+}
 
 // ── MODAL DÉTAIL ──────────────────────────────────────────────────
 function openModal(id, tab) {
