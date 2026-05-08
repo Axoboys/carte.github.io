@@ -133,6 +133,26 @@
   .legend-item{display:flex;align-items:center;gap:0.5rem;font-size:0.8rem;margin-bottom:0.4rem;}
   .legend-box{width:28px;height:20px;border-radius:4px;flex-shrink:0;}
 
+  /* ── SCANNER IA ── */
+  .scanner-drop-zone{border:2px dashed var(--gold);border-radius:12px;padding:1.25rem 0.75rem;text-align:center;cursor:pointer;transition:all 0.2s;background:rgba(255,215,0,0.04);position:relative;}
+  .scanner-drop-zone:hover,.scanner-drop-zone.drag-over{background:rgba(255,215,0,0.1);border-color:#ffe566;}
+  .scanner-drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+  .scanner-icon{font-size:1.8rem;margin-bottom:0.3rem;}
+  .scanner-hint{font-size:0.72rem;color:var(--muted);line-height:1.5;}
+  .scanner-preview{width:100%;border-radius:8px;margin:0.75rem 0;max-height:140px;object-fit:cover;display:none;}
+  .scanner-results{margin-top:0.75rem;}
+  .scanner-chips{display:flex;flex-wrap:wrap;gap:0.35rem;margin:0.5rem 0;}
+  .scan-chip{padding:0.25rem 0.55rem;border-radius:6px;font-size:0.78rem;font-weight:600;background:rgba(255,215,0,0.15);border:1px solid var(--gold);color:var(--gold);cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:0.3rem;}
+  .scan-chip.removed{background:rgba(255,71,87,0.1);border-color:var(--red);color:var(--red);text-decoration:line-through;opacity:0.6;}
+  .scan-chip .chip-x{opacity:0.6;font-size:0.7rem;}
+  .scan-chip:not(.removed):hover{background:rgba(255,215,0,0.3);}
+  .scanner-loading{display:none;text-align:center;padding:0.75rem 0;}
+  .scan-spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 0.5rem;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .scan-status{font-size:0.78rem;color:var(--muted);}
+  .scan-confirm-row{display:flex;gap:0.4rem;margin-top:0.6rem;}
+  .scanner-error{color:var(--red);font-size:0.78rem;margin-top:0.4rem;display:none;}
+
   @media(max-width:800px){
     .app{grid-template-columns:1fr;grid-template-rows:auto 1fr;}
     .sidebar{max-height:50vh;}
@@ -196,6 +216,31 @@
         </div>
         <div style="margin-top:0.5rem;font-size:0.75rem;color:var(--muted);">Entrée pour encoder</div>
       </div>
+      <!-- SCANNER IA -->
+      <div class="sidebar-section">
+        <div class="section-title">📷 Scanner IA</div>
+        <div class="scanner-drop-zone" id="scanner-zone">
+          <input type="file" id="scanner-input" accept="image/*" onchange="handleScanFile(event)"/>
+          <div class="scanner-icon">✨</div>
+          <div style="font-size:0.82rem;font-weight:600;color:var(--gold);margin-bottom:0.25rem;">Prends une photo de tes cartes</div>
+          <div class="scanner-hint">L'IA détecte automatiquement<br>les numéros de tes brillantes</div>
+        </div>
+        <img id="scanner-preview" class="scanner-preview" alt="preview"/>
+        <div class="scanner-loading" id="scanner-loading">
+          <div class="scan-spinner"></div>
+          <div class="scan-status" id="scan-status">Analyse en cours…</div>
+        </div>
+        <div class="scanner-error" id="scanner-error"></div>
+        <div class="scanner-results" id="scanner-results" style="display:none">
+          <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">Numéros détectés — clique pour retirer :</div>
+          <div class="scanner-chips" id="scanner-chips"></div>
+          <div class="scan-confirm-row">
+            <button class="btn gold" style="flex:1" onclick="confirmScanImport()">✦ Ajouter tout</button>
+            <button class="btn" onclick="resetScanner()">✕</button>
+          </div>
+        </div>
+      </div>
+
       <div class="sidebar-section">
         <div class="section-title">🔍 Filtres brillantes</div>
         <input type="text" class="search-input" id="search-shiny" placeholder="Rechercher..." oninput="renderGrid()" style="margin-bottom:0.75rem"/>
@@ -644,6 +689,154 @@ function showToast(type, icon, msg) {
   t.className = 'toast show ' + type;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.className = 'toast'; }, 3500);
+}
+
+// ── SCANNER IA ────────────────────────────────────────────────────
+let scanDetected = []; // [{id, removed}]
+
+function handleScanFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const b64 = e.target.result.split(',')[1];
+    const mime = file.type || 'image/jpeg';
+    // Afficher preview
+    const prev = document.getElementById('scanner-preview');
+    prev.src = e.target.result;
+    prev.style.display = 'block';
+    resetScanResults();
+    runScanIA(b64, mime);
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+// Drag & drop
+document.addEventListener('DOMContentLoaded', () => {
+  const zone = document.getElementById('scanner-zone');
+  if (!zone) return;
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      const fakeEv = { target: { files: [file], value: '' } };
+      handleScanFile(fakeEv);
+    }
+  });
+});
+
+async function runScanIA(b64, mime) {
+  document.getElementById('scanner-loading').style.display = 'block';
+  document.getElementById('scanner-error').style.display = 'none';
+  document.getElementById('scan-status').textContent = 'Analyse en cours…';
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mime, data: b64 }
+            },
+            {
+              type: 'text',
+              text: `Tu es un assistant spécialisé dans les cartes Pokémon brillantes (shiny).
+Regarde cette image et liste TOUS les numéros de Pokédex visibles sur les cartes (numéros entre 001 et 1025).
+Les numéros apparaissent généralement en bas à droite ou en haut de la carte, format "001/1025" ou simplement le numéro.
+Réponds UNIQUEMENT avec un tableau JSON d'entiers, sans texte avant ou après, sans backticks.
+Exemple: [25, 133, 6, 150]
+Si tu ne vois aucune carte ou aucun numéro lisible, réponds: []`
+            }
+          ]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const text = (data.content || []).map(b => b.text || '').join('');
+    const clean = text.replace(/```json|```/g, '').trim();
+    let nums = JSON.parse(clean);
+    if (!Array.isArray(nums)) throw new Error('Format inattendu');
+
+    // Dédupliquer et filtrer 1-1025
+    nums = [...new Set(nums)].filter(n => Number.isInteger(n) && n >= 1 && n <= 1025);
+    scanDetected = nums.map(n => ({ id: String(n).padStart(3,'0'), removed: false }));
+
+    document.getElementById('scanner-loading').style.display = 'none';
+    renderScanChips();
+
+  } catch(err) {
+    document.getElementById('scanner-loading').style.display = 'none';
+    const errEl = document.getElementById('scanner-error');
+    errEl.style.display = 'block';
+    errEl.textContent = '❌ Erreur : ' + (err.message || 'Analyse échouée');
+  }
+}
+
+function renderScanChips() {
+  const resultsEl = document.getElementById('scanner-results');
+  const chipsEl   = document.getElementById('scanner-chips');
+  chipsEl.innerHTML = '';
+
+  if (scanDetected.length === 0) {
+    const errEl = document.getElementById('scanner-error');
+    errEl.style.display = 'block';
+    errEl.textContent = '🔍 Aucun numéro détecté. Essaie avec une photo plus nette.';
+    return;
+  }
+
+  scanDetected.forEach((entry, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'scan-chip' + (entry.removed ? ' removed' : '');
+    chip.innerHTML = `#${entry.id} <span class="chip-x">✕</span>`;
+    chip.onclick = () => {
+      scanDetected[i].removed = !scanDetected[i].removed;
+      renderScanChips();
+    };
+    chipsEl.appendChild(chip);
+  });
+
+  resultsEl.style.display = 'block';
+}
+
+async function confirmScanImport() {
+  const toAdd = scanDetected.filter(e => !e.removed);
+  if (toAdd.length === 0) { showToast('error','❌','Aucune carte à ajouter !'); return; }
+  let added = 0;
+  for (const entry of toAdd) {
+    if (!collection[entry.id].shiny) {
+      collection[entry.id].shiny = true;
+      await saveCard(entry.id);
+      added++;
+    }
+  }
+  updateStats();
+  renderGrid();
+  showToast('shiny-toast','✨', `${added} brillante${added>1?'s':''} ajoutée${added>1?'s':''} !`);
+  resetScanner();
+}
+
+function resetScanResults() {
+  scanDetected = [];
+  document.getElementById('scanner-results').style.display = 'none';
+  document.getElementById('scanner-chips').innerHTML = '';
+  document.getElementById('scanner-error').style.display = 'none';
+}
+
+function resetScanner() {
+  resetScanResults();
+  document.getElementById('scanner-preview').style.display = 'none';
+  document.getElementById('scanner-preview').src = '';
+  document.getElementById('scanner-loading').style.display = 'none';
 }
 
 // ── INIT ──────────────────────────────────────────────────────────
