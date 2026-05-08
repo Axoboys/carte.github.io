@@ -135,469 +135,6 @@
     margin-bottom: 1rem;
   }
 
-  /* SCANNER */
-  .scanner-box {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    position: relative;
-  }
-
-  #video-feed {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-    display: block;
-    background: #000;
-  }
-
-  .scan-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(0,0,0,0.8);
-    padding: 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  /* CARD NUMBER ZONE — bottom strip highlighted */
-  .card-number-zone {
-    position: absolute;
-    bottom: 36px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 70%;
-    height: 28px;
-    border: 2px solid var(--red);
-    border-radius: 4px;
-    box-shadow: 0 0 0 2px rgba(255,71,87,0.3), 0 0 12px rgba(255,71,87,0.4);
-    pointer-events: none;
-  }
-
-  .zone-label {
-    position: absolute;
-    top: -18px;
-    left: 0;
-    right: 0;
-    text-align: center;
-    font-size: 9px;
-    color: var(--red);
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-
-  .scan-status {
-    font-size: 0.75rem;
-    color: var(--muted);
-  }
-
-  .scan-result-badge {
-    font-size: 0.75rem;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 99px;
-    background: var(--surface);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-
-  .scan-result-badge.found { background: rgba(46,213,115,0.15); color: var(--green); border-color: var(--green); }
-  .scan-result-badge.missing { background: rgba(255,71,87,0.15); color: var(--red); border-color: var(--red); }
-  .scan-result-badge.owned { background: rgba(83,82,237,0.15); color: #818cf8; border-color: var(--blue); }
-
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: var(--surface2);
-    color: var(--text);
-    font-family: 'Outfit', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .btn:hover { background: var(--border); }
-  .btn.primary { background: var(--accent); color: #000; border-color: var(--accent); }
-  .btn.primary:hover { background: #e6971a; }
-  .btn.danger { background: rgba(255,71,87,0.15); color: var(--red); border-color: var(--red); }
-  .btn.success { background: rgba(46,213,115,0.15); color: var(--green); border-color: var(--green); }
-  .btn.full { width: 100%; justify-content: center; }
-
-  /* MANUAL INPUT */
-  .input-row {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-  }
-
-  input[type="number"], input[type="text"], select {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: 'Outfit', sans-serif;
-    font-size: 0.9rem;
-    padding: 0.5rem 0.75rem;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  input:focus, select:focus { border-color: var(--accent); }
-
-  input[type="number"] { width: 90px; }
-
-  /* FILTERS */
-  .filter-pills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-  }
-
-  .pill {
-    padding: 0.3rem 0.7rem;
-    border-radius: 99px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    border: 1px solid var(--border);
-    background: var(--surface2);
-    color: var(--muted);
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .pill.active { background: var(--accent); color: #000; border-color: var(--accent); }
-  .pill.owned-pill.active { background: var(--green); color: #000; border-color: var(--green); }
-  .pill.missing-pill.active { background: var(--red); color: #fff; border-color: var(--red); }
-
-  /* SEARCH */
-  .search-input {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: 'Outfit', sans-serif;
-    font-size: 0.9rem;
-    padding: 0.5rem 0.75rem;
-    outline: none;
-  }
-
-  .search-input:focus { border-color: var(--accent); }
-
-  /* GRID */
-  .main-content {
-    overflow-y: auto;
-    padding: 1.5rem;
-    background: var(--bg);
-  }
-
-  .grid-controls {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1rem;
-  }
-
-  .grid-title {
-    font-size: 0.85rem;
-    color: var(--muted);
-  }
-
-  .grid-title strong { color: var(--text); }
-
-  .card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 6px;
-  }
-
-  /* CARD TILE */
-  .card-tile {
-    aspect-ratio: 63/88;
-    border-radius: 6px;
-    border: 1.5px solid var(--border);
-    background: var(--surface2);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.15s;
-    position: relative;
-    overflow: hidden;
-    user-select: none;
-  }
-
-  .card-tile:hover {
-    border-color: var(--accent);
-    transform: scale(1.05);
-    z-index: 2;
-  }
-
-  .card-tile.owned {
-    background: rgba(46,213,115,0.08);
-    border-color: var(--green);
-  }
-
-  .card-tile.owned::after {
-    content: '✓';
-    position: absolute;
-    top: 3px;
-    right: 4px;
-    font-size: 10px;
-    color: var(--green);
-    font-weight: 700;
-  }
-
-  .card-tile.just-found {
-    animation: flash-green 0.6s ease;
-  }
-
-  @keyframes flash-green {
-    0% { box-shadow: 0 0 0 0 rgba(46,213,115,0.8); }
-    50% { box-shadow: 0 0 0 8px rgba(46,213,115,0.4); transform: scale(1.1); }
-    100% { box-shadow: 0 0 0 0 rgba(46,213,115,0); }
-  }
-
-  .card-num {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text);
-    line-height: 1;
-  }
-
-  .card-tile.owned .card-num { color: var(--green); }
-
-  .card-sub {
-    font-size: 9px;
-    color: var(--muted);
-    margin-top: 2px;
-  }
-
-  /* TOAST */
-  .toast {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1rem 1.25rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 0.9rem;
-    transform: translateY(100px);
-    opacity: 0;
-    transition: all 0.3s ease;
-    z-index: 1000;
-    max-width: 300px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  }
-
-  .toast.show { transform: translateY(0); opacity: 1; }
-  .toast.success { border-color: var(--green); }
-  .toast.error { border-color: var(--red); }
-  .toast.info { border-color: var(--blue); }
-
-  .toast-icon { font-size: 1.3rem; }
-
-  /* MODAL */
-  .modal-bg {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 200;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s;
-  }
-
-  .modal-bg.open { opacity: 1; pointer-events: all; }
-
-  .modal {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 2rem;
-    width: 380px;
-    max-width: 90vw;
-  }
-
-  .modal h2 {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 12px;
-    color: var(--accent);
-    margin-bottom: 1.5rem;
-  }
-
-  .modal-card-num {
-    font-size: 3rem;
-    font-weight: 700;
-    text-align: center;
-    margin: 1rem 0;
-  }
-
-  .modal-card-num.owned { color: var(--green); }
-  .modal-card-num.missing { color: var(--muted); }
-
-  .modal-actions {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 1.5rem;
-  }
-
-  /* LOADING SCANNER */
-  .scanner-loading {
-    position: absolute;
-    inset: 0;
-    background: rgba(10,10,18,0.85);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    font-size: 0.8rem;
-    color: var(--accent);
-  }
-
-  .spinner {
-    width: 28px;
-    height: 28px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .scan-btn-row {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.75rem;
-  }
-
-  /* POPUP ENCODAGE */
-  .popup-bg {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.75);
-    z-index: 300;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s;
-  }
-  .popup-bg.open { opacity: 1; pointer-events: all; }
-
-  .popup {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 2rem;
-    width: 400px;
-    max-width: 92vw;
-    text-align: center;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-    transform: scale(0.92);
-    transition: transform 0.2s;
-  }
-  .popup-bg.open .popup { transform: scale(1); }
-
-  .popup-icon { font-size: 3rem; margin-bottom: 0.75rem; }
-
-  .popup-title {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 11px;
-    color: var(--accent);
-    margin-bottom: 0.5rem;
-    line-height: 1.6;
-  }
-
-  .popup-subtitle {
-    font-size: 0.9rem;
-    color: var(--muted);
-    margin-bottom: 1.5rem;
-  }
-
-  .popup-card-num {
-    font-size: 2.5rem;
-    font-weight: 800;
-    margin-bottom: 0.25rem;
-  }
-  .popup-card-num.owned { color: var(--blue); }
-  .popup-card-num.new { color: var(--green); }
-
-  .popup-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    margin-top: 1.25rem;
-  }
-
-  /* SHINY MODE */
-  .shiny-toggle {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: var(--surface2);
-    border: 1.5px solid var(--border);
-    border-radius: 999px;
-    padding: 0.35rem 1rem;
-    cursor: pointer;
-    font-family: 'Outfit', sans-serif;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--muted);
-    transition: all 0.2s;
-  }
-  .shiny-toggle:hover { border-color: var(--accent); color: var(--accent); }
-  .shiny-toggle.active {
-    background: linear-gradient(135deg, #1a1200, #2a1f00);
-    border-color: #f5c842;
-    color: #f5c842;
-    box-shadow: 0 0 14px rgba(245,200,66,0.3);
-  }
-
-  /* Shiny card tiles */
-  body.shiny-mode .card-tile.owned {
-    background: linear-gradient(135deg, rgba(245,200,66,0.12), rgba(248,160,60,0.08));
-    border-color: #f5c842;
-    box-shadow: 0 0 10px rgba(245,200,66,0.25), inset 0 0 20px rgba(245,200,66,0.05);
-  }
-  body.shiny-mode .card-tile.owned .card-num { color: #f5c842; }
-  body.shiny-mode .card-tile.owned::after {
-    content: '✨';
-    position: absolute;
-    top: 3px;
-    right: 4px;
-    font-size: 9px;
-  }
-  body.shiny-mode .card-tile { position: relative; }
-
-  /* Shiny header banner */
-  body.shiny-mode header {
-    background: linear-gradient(135deg, #0d0900, #1a1200, #0d0900);
-    border-bottom-color: #f5c842;
-  }
-  body.shiny-mode .logo span { color: #f5c842; }
-
   /* Responsive */
   @media (max-width: 800px) {
     .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
@@ -605,6 +142,59 @@
     .stats-bar { display: none; }
     .logo { font-size: 10px; }
     .progress-bar { width: 120px; }
+  }
+
+  /* ── POPUP ENCODAGE ── */
+  .encode-popup-bg {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .encode-popup-bg.open { opacity: 1; pointer-events: all; }
+
+  .encode-popup {
+    background: var(--surface);
+    border-radius: 20px;
+    padding: 2rem 2rem 1.5rem;
+    width: 340px;
+    max-width: 92vw;
+    text-align: center;
+    transform: scale(0.9);
+    transition: transform 0.2s;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  }
+  .encode-popup-bg.open .encode-popup { transform: scale(1); }
+  .encode-popup.already { border: 2px solid #818cf8; }
+  .encode-popup.new-card { border: 2px solid var(--green); }
+
+  .ep-emoji { font-size: 3rem; margin-bottom: 0.4rem; line-height: 1; }
+  .ep-title { font-family: 'Press Start 2P', monospace; font-size: 10px; line-height: 1.8; margin-bottom: 0.4rem; }
+  .ep-title.already { color: #818cf8; }
+  .ep-title.new-card { color: var(--green); }
+  .ep-num { font-size: 3rem; font-weight: 800; margin: 0.5rem 0; line-height: 1; }
+  .ep-num.already { color: #818cf8; }
+  .ep-num.new-card { color: var(--green); }
+  .ep-sub { font-size: 0.82rem; color: var(--muted); margin-bottom: 1.5rem; line-height: 1.5; }
+  .ep-actions { display: flex; flex-direction: column; gap: 0.55rem; }
+
+  .btn.purple { background: rgba(129,140,248,0.15); color: #818cf8; border-color: #818cf8; }
+  .btn.purple:hover { background: rgba(129,140,248,0.3); }
+
+  .confetti-piece {
+    position: fixed; width: 9px; height: 9px; border-radius: 2px;
+    pointer-events: none; z-index: 500;
+    animation: cf-fall 1.1s ease-out forwards;
+  }
+  @keyframes cf-fall {
+    0%   { opacity:1; transform: translateY(0) rotate(0deg) scale(1); }
+    100% { opacity:0; transform: translateY(180px) rotate(720deg) scale(0.2); }
   }
 </style>
 </head>
@@ -626,13 +216,11 @@
       <div class="progress-pct" id="progress-pct">0%</div>
     </div>
   </div>
-  <button class="shiny-toggle" id="shiny-toggle-btn" onclick="toggleShinyMode()">✨ Collection Brillante</button>
 </header>
 
 <div class="app">
   <!-- SIDEBAR -->
   <aside class="sidebar">
-
     <!-- AJOUT MANUEL -->
     <div class="sidebar-section">
       <div class="section-title">✏️ Saisie manuelle</div>
@@ -698,14 +286,14 @@
   </div>
 </div>
 
-<!-- POPUP ENCODAGE CARTE -->
-<div class="popup-bg" id="encode-popup">
-  <div class="popup">
-    <div class="popup-icon" id="popup-icon">📦</div>
-    <div class="popup-card-num" id="popup-card-num">001</div>
-    <div class="popup-title" id="popup-title">Titre</div>
-    <div class="popup-subtitle" id="popup-subtitle">Sous-titre</div>
-    <div class="popup-actions" id="popup-actions"></div>
+<!-- POPUP ENCODAGE -->
+<div class="encode-popup-bg" id="encode-popup-bg">
+  <div class="encode-popup" id="encode-popup">
+    <div class="ep-emoji" id="ep-emoji">🎉</div>
+    <div class="ep-num" id="ep-num">001</div>
+    <div class="ep-title" id="ep-title">Nouvelle carte !</div>
+    <div class="ep-sub" id="ep-sub"></div>
+    <div class="ep-actions" id="ep-actions"></div>
   </div>
 </div>
 
@@ -718,14 +306,11 @@
 <script>
 // ─── DATABASE (IndexedDB) ─────────────────────────────────────────
 const DB_NAME = 'pokecollection';
-const DB_VERSION = 2; // bump version pour ajouter le store shiny
+const DB_VERSION = 1;
 let db;
 let collection = {}; // { "001": false, "002": true, ... }
-let shinyCollection = {}; // { "001": false, "002": true, ... }
-let isShinyMode = false;
 let currentFilter = 'all';
 let modalCard = null;
-let popupIsOwned = false;
 
 function padNum(n) {
   return String(n).padStart(3, '0');
@@ -747,9 +332,6 @@ function openDB() {
       if (!db.objectStoreNames.contains('cards')) {
         db.createObjectStore('cards', { keyPath: 'id' });
       }
-      if (!db.objectStoreNames.contains('shiny')) {
-        db.createObjectStore('shiny', { keyPath: 'id' });
-      }
     };
     req.onsuccess = (e) => { db = e.target.result; resolve(db); };
     req.onerror = () => reject(req.error);
@@ -767,21 +349,9 @@ async function loadFromDB() {
         rows.forEach(r => { collection[r.id] = r.owned; });
         resolve(true);
       } else {
+        // First time: save all 1025
         saveAllToDB().then(() => resolve(false));
       }
-    };
-  });
-}
-
-async function loadShinyFromDB() {
-  return new Promise((resolve) => {
-    const tx = db.transaction('shiny', 'readonly');
-    const store = tx.objectStore('shiny');
-    const req = store.getAll();
-    req.onsuccess = () => {
-      const rows = req.result;
-      rows.forEach(r => { shinyCollection[r.id] = r.owned; });
-      resolve();
     };
   });
 }
@@ -796,20 +366,17 @@ async function saveAllToDB() {
 }
 
 async function saveCard(id) {
-  const storeName = isShinyMode ? 'shiny' : 'cards';
-  const col = isShinyMode ? shinyCollection : collection;
   return new Promise((resolve) => {
-    const tx = db.transaction(storeName, 'readwrite');
-    const store = tx.objectStore(storeName);
-    store.put({ id, owned: col[id] });
+    const tx = db.transaction('cards', 'readwrite');
+    const store = tx.objectStore('cards');
+    store.put({ id, owned: collection[id] });
     tx.oncomplete = resolve;
   });
 }
 
 // ─── STATS ────────────────────────────────────────────────────────
 function updateStats() {
-  const col = isShinyMode ? shinyCollection : collection;
-  const owned = Object.values(col).filter(Boolean).length;
+  const owned = Object.values(collection).filter(Boolean).length;
   const missing = 1025 - owned;
   const pct = Math.round((owned / 1025) * 100);
   document.getElementById('hdr-owned').textContent = owned;
@@ -822,8 +389,7 @@ function updateStats() {
 function renderGrid() {
   const grid = document.getElementById('card-grid');
   const search = document.getElementById('search').value.trim();
-  const col = isShinyMode ? shinyCollection : collection;
-  let cards = Object.entries(col);
+  let cards = Object.entries(collection);
 
   if (currentFilter === 'owned') cards = cards.filter(([, v]) => v);
   if (currentFilter === 'missing') cards = cards.filter(([, v]) => !v);
@@ -838,7 +404,7 @@ function renderGrid() {
     tile.className = 'card-tile' + (owned ? ' owned' : '');
     tile.dataset.id = id;
     tile.innerHTML = `<div class="card-num">${id}</div>`;
-    tile.onclick = () => isShinyMode ? toggleShinyCard(id, tile) : openModal(id);
+    tile.onclick = () => openModal(id);
     frag.appendChild(tile);
   });
   grid.appendChild(frag);
@@ -852,50 +418,105 @@ function setFilter(f, el) {
 }
 
 // ─── TOGGLE CARD ──────────────────────────────────────────────────
-async function toggleCard(id, silent = false) {
-  const col = isShinyMode ? shinyCollection : collection;
-  if (!col.hasOwnProperty(id)) return;
-  col[id] = !col[id];
+// ─── TOGGLE CARD (mise à jour tuile uniquement, pas de popup) ────────
+async function applyCard(id, owned) {
+  collection[id] = owned;
   await saveCard(id);
   updateStats();
   const tile = document.querySelector(`.card-tile[data-id="${id}"]`);
   if (tile) {
-    if (col[id]) {
+    if (owned) {
       tile.classList.add('owned', 'just-found');
       setTimeout(() => tile.classList.remove('just-found'), 700);
     } else {
       tile.classList.remove('owned');
     }
   }
-  if (!silent) {
-    const col = isShinyMode ? shinyCollection : collection;
-    if (col[id]) {
-      showToast('success', isShinyMode ? '✨' : '✅', `Carte #${id} marquée comme ${isShinyMode ? 'brillante' : 'possédée'} !`);
-    } else {
-      showToast('info', '↩️', `Carte #${id} retirée de la collection.`);
-    }
-  }
-  const col2 = isShinyMode ? shinyCollection : collection;
-  return col2[id];
 }
 
-// ─── TOGGLE SHINY CARD (direct, sans popup) ───────────────────────
-async function toggleShinyCard(id, tile) {
-  shinyCollection[id] = !shinyCollection[id];
-  await saveCard(id);
-  updateStats();
-  if (shinyCollection[id]) {
-    tile.classList.add('owned', 'just-found');
-    setTimeout(() => tile.classList.remove('just-found'), 700);
-    showToast('success', '✨', `Carte #${id} brillante ajoutée !`);
+// ─── POPUP ENCODAGE ───────────────────────────────────────────────
+function openEncodePopup(id) {
+  const alreadyOwned = collection[id];
+  const bg = document.getElementById('encode-popup-bg');
+  const box = document.getElementById('encode-popup');
+
+  document.getElementById('ep-num').textContent = '#' + id;
+  document.getElementById('ep-num').className = 'ep-num ' + (alreadyOwned ? 'already' : 'new-card');
+  box.className = 'encode-popup ' + (alreadyOwned ? 'already' : 'new-card');
+
+  const actions = document.getElementById('ep-actions');
+  actions.innerHTML = '';
+
+  if (alreadyOwned) {
+    // Carte déjà possédée → proposer retirer ou annuler
+    document.getElementById('ep-emoji').textContent = '⚠️';
+    document.getElementById('ep-title').textContent = 'Tu as déjà cette carte !';
+    document.getElementById('ep-title').className = 'ep-title already';
+    document.getElementById('ep-sub').textContent = 'Elle est déjà dans ta collection. Tu veux la retirer ?';
+
+    const btnRemove = document.createElement('button');
+    btnRemove.className = 'btn danger full';
+    btnRemove.textContent = '🗑️ Retirer de ma collection';
+    btnRemove.onclick = async () => {
+      await applyCard(id, false);
+      closeEncodePopup();
+      showToast('info', '↩️', `Carte #${id} retirée de la collection.`);
+    };
+
+    const btnCancel = document.createElement('button');
+    btnCancel.className = 'btn full';
+    btnCancel.textContent = '✕ Annuler';
+    btnCancel.onclick = closeEncodePopup;
+
+    actions.appendChild(btnRemove);
+    actions.appendChild(btnCancel);
   } else {
-    tile.classList.remove('owned');
-    showToast('info', '↩️', `Carte #${id} retirée de la collection brillante.`);
+    // Nouvelle carte → l'ajouter directement + confetti
+    document.getElementById('ep-emoji').textContent = '🎉';
+    document.getElementById('ep-title').textContent = 'Nouvelle carte obtenue !';
+    document.getElementById('ep-title').className = 'ep-title new-card';
+    document.getElementById('ep-sub').textContent = 'Elle a été ajoutée à ta collection !';
+
+    applyCard(id, true);
+    spawnConfetti();
+
+    const btnOk = document.createElement('button');
+    btnOk.className = 'btn success full';
+    btnOk.textContent = '✓ Super !';
+    btnOk.onclick = closeEncodePopup;
+
+    actions.appendChild(btnOk);
+  }
+
+  bg.classList.add('open');
+}
+
+function closeEncodePopup() {
+  document.getElementById('encode-popup-bg').classList.remove('open');
+}
+
+document.getElementById('encode-popup-bg').addEventListener('click', (e) => {
+  if (e.target.id === 'encode-popup-bg') closeEncodePopup();
+});
+
+function spawnConfetti() {
+  const colors = ['#f5a623','#2ed573','#5352ed','#e8b4f8','#ff4757','#fff'];
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight / 2;
+  for (let i = 0; i < 28; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    el.style.left = (cx + (Math.random() - 0.5) * 220) + 'px';
+    el.style.top = (cy - 60 + (Math.random() - 0.5) * 80) + 'px';
+    el.style.animationDelay = (Math.random() * 0.3) + 's';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1500);
   }
 }
 
 // ─── MANUAL INPUT ─────────────────────────────────────────────────
-async function toggleManual() {
+function toggleManual() {
   const input = document.getElementById('manual-num');
   const num = parseInt(input.value);
   if (!num || num < 1 || num > 1025) {
@@ -905,90 +526,16 @@ async function toggleManual() {
   const id = padNum(num);
   input.value = '';
   input.focus();
-  if (isShinyMode) {
-    // Mode brillant : toggle direct sans popup
-    const tile = document.querySelector(`.card-tile[data-id="${id}"]`);
-    await toggleShinyCard(id, tile);
-  } else {
-    showEncodePopup(id);
-  }
+  openEncodePopup(id);
 }
-
-// ─── POPUP ENCODAGE ───────────────────────────────────────────────
-function showEncodePopup(id) {
-  const owned = collection[id]; // popup uniquement en mode normal
-  popupIsOwned = owned;
-  const popup = document.getElementById('encode-popup');
-  document.getElementById('popup-card-num').textContent = '#' + id;
-  document.getElementById('popup-card-num').className = 'popup-card-num ' + (owned ? 'owned' : 'new');
-
-  const actionsEl = document.getElementById('popup-actions');
-  actionsEl.innerHTML = '';
-
-  if (owned) {
-    // Carte déjà possédée
-    document.getElementById('popup-icon').textContent = '⚠️';
-    document.getElementById('popup-title').textContent = 'Tu as déjà cette carte !';
-    document.getElementById('popup-subtitle').textContent = 'Cette carte est déjà dans ta collection. Que veux-tu faire ?';
-
-    const btnRemove = document.createElement('button');
-    btnRemove.className = 'btn danger full';
-    btnRemove.textContent = '🗑️ Retirer de ma collection';
-    btnRemove.onclick = async () => {
-      closeEncodePopup();
-      await toggleCard(id);
-    };
-
-    const btnCancel = document.createElement('button');
-    btnCancel.className = 'btn full';
-    btnCancel.textContent = '✕ Annuler';
-    btnCancel.onclick = closeEncodePopup;
-
-    actionsEl.appendChild(btnRemove);
-    actionsEl.appendChild(btnCancel);
-  } else {
-    // Nouvelle carte — on l'ajoute directement et on affiche le succès
-    document.getElementById('popup-icon').textContent = '🎉';
-    document.getElementById('popup-title').textContent = 'Nouvelle carte obtenue !';
-    document.getElementById('popup-subtitle').textContent = 'Super ! Cette carte a été ajoutée à ta collection.';
-
-    (async () => { await toggleCard(id, true); })();
-
-    const btnOk = document.createElement('button');
-    btnOk.className = 'btn success full';
-    btnOk.textContent = '✅ Super, merci !';
-    btnOk.onclick = closeEncodePopup;
-
-    actionsEl.appendChild(btnOk);
-  }
-
-  popup.classList.add('open');
-  popup.onclick = (e) => { if (e.target === popup) closeEncodePopup(); };
-}
-
-function closeEncodePopup() {
-  document.getElementById('encode-popup').classList.remove('open');
-  // Remettre le focus sur le champ de saisie
-  document.getElementById('manual-num').focus();
-}
-
-
 
 document.addEventListener('keydown', (e) => {
-  const popupOpen = document.getElementById('encode-popup').classList.contains('open');
-
-  if (e.key === 'Enter') {
-    if (popupOpen && popupIsOwned) {
-      // Entrée = annuler sur le popup "carte déjà possédée"
-      closeEncodePopup();
-    } else if (!popupOpen && document.activeElement.id === 'manual-num') {
-      toggleManual();
-    }
-  }
-  if (e.key === 'Escape' && popupOpen) {
-    closeEncodePopup();
+  if (e.key === 'Enter' && document.activeElement.id === 'manual-num') {
+    toggleManual();
   }
 });
+
+// ─── MODAL (clic sur tuile dans la grille) ────────────────────────
 function openModal(id) {
   modalCard = id;
   const owned = collection[id];
@@ -1013,8 +560,14 @@ function closeModalBtn() {
 
 async function modalToggle() {
   if (!modalCard) return;
-  await toggleCard(modalCard);
-  openModal(modalCard); // refresh
+  const wasOwned = collection[modalCard];
+  await applyCard(modalCard, !wasOwned);
+  if (!wasOwned) {
+    showToast('success', '✅', `Carte #${modalCard} ajoutée !`);
+  } else {
+    showToast('info', '↩️', `Carte #${modalCard} retirée.`);
+  }
+  openModal(modalCard);
 }
 
 // ─── EXPORT / IMPORT ──────────────────────────────────────────────
@@ -1058,22 +611,6 @@ async function confirmReset() {
   showToast('info', '🗑️', 'Collection réinitialisée.');
 }
 
-// ─── SHINY MODE ───────────────────────────────────────────────────
-function toggleShinyMode() {
-  isShinyMode = !isShinyMode;
-  document.body.classList.toggle('shiny-mode', isShinyMode);
-  const btn = document.getElementById('shiny-toggle-btn');
-  btn.classList.toggle('active', isShinyMode);
-  btn.textContent = isShinyMode ? '⬅ Collection Normale' : '✨ Collection Brillante';
-  // Masquer/afficher popup selon le mode
-  document.getElementById('encode-popup').classList.remove('open');
-  updateStats();
-  renderGrid();
-  if (isShinyMode) {
-    showToast('info', '✨', 'Mode Brillant activé — clic direct, sans popup !');
-  }
-}
-
 // ─── TOAST ────────────────────────────────────────────────────────
 let toastTimer;
 function showToast(type, icon, msg) {
@@ -1086,20 +623,10 @@ function showToast(type, icon, msg) {
 }
 
 // ─── INIT ────────────────────────────────────────────────────────
-function initShinyCollection() {
-  for (let i = 1; i <= 1025; i++) {
-    const id = padNum(i);
-    if (!shinyCollection.hasOwnProperty(id)) shinyCollection[id] = false;
-  }
-}
-
 async function init() {
   initCollection();
-  initShinyCollection();
   await openDB();
   await loadFromDB();
-  await loadShinyFromDB();
-  initShinyCollection(); // fill any missing keys after DB load
   updateStats();
   renderGrid();
 }
