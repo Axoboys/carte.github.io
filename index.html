@@ -266,7 +266,7 @@
 
 <script>
 // ── ÉTAT ──────────────────────────────────────────────────────────
-const DB_NAME    = 'pokecollection2';
+const DB_NAME    = 'pokecollection2'; // ← base correcte
 const DB_VERSION = 1;
 let db;
 let collection = {};   // { "001": { normal: false, shiny: false }, ... }
@@ -307,11 +307,9 @@ async function loadFromDB() {
     req.onsuccess = () => {
       const rows = req.result;
       if (rows.length > 0) {
-        // DB existante : charger
         rows.forEach(r => { collection[r.id] = { normal: r.normal || false, shiny: r.shiny || false }; });
         resolve(true);
       } else {
-        // Première fois : pré-charger les 920 cartes normales
         INITIAL_OWNED.forEach(id => {
           const key = id.length < 3 ? id.padStart(3,'0') : id;
           if (collection[key]) collection[key].normal = true;
